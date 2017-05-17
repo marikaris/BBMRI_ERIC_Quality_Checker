@@ -6,9 +6,12 @@ from networkIdChecks import NetworkIdChecks
 from personIdChecks import PersonIdChecks
 from configParser import ConfigParser
 
-import re, pprint
+import re
 
 class QualityChecker():
+    """NAME: QualityChecker
+    PURPOSE: Checks if the values in the MOLGENIS database of BBMRI-ERIC are filled in correctly
+    OUT: logs.txt - file with all errors in the database"""
     def __init__(self, connnection):
         self.connection = connnection
         self.collection_data = self.get_collection_data()
@@ -19,36 +22,68 @@ class QualityChecker():
         self.logs.reset()
 
     def get_network_data(self):
+        """NAME: get_network_data
+        PURPOSE: retrieves network data from molgenis
+        OUT: dictionary with data inside networks"""
         return self.connection.session.get("eu_bbmri_eric_networks", num=10000)
 
     def get_person_data(self):
+        """NAME: get_person_data
+        PURPOSE: retrieves person data from molgenis
+        OUT: dictionary with data inside persons"""
         return self.connection.session.get("eu_bbmri_eric_persons", num=10000)
 
     def get_collection_data(self):
+        """NAME: get_collection_data
+        PURPOSE: retrieves collections data from molgenis
+        OUT: dictionary with data inside collections"""
         return self.connection.session.get("eu_bbmri_eric_collections", num=10000)
 
     def get_biobank_data(self):
+        """NAME: get_biobank_data
+        PURPOSE: retrieves biobank data from molgenis
+        OUT: dictionary with data inside biobanks"""
         return self.connection.session.get("eu_bbmri_eric_biobanks", num=10000)
 
     def is_valid_collection_id(self, id, country):
+        """NAME: is_valid_collection_id
+        PURPOSE: checks if collection id is valid
+        IN: id - the id to check
+            country - the country specified for the collection
+        OUT: writes to log file when invalid"""
         collection_qc = CollectionIdChecks(id, country)
         msg = collection_qc.get_messages()
         if len(msg) > 0:
             self.logs.write(id, 'collection_id', collection_qc.get_messages(), 'CRITICAL', 'COLLECTION HAS INVALID ID')
 
     def is_valid_biobank_id(self, id, country):
+        """NAME: is_valid_biobank_id
+        PURPOSE: checks if biobank id is valid
+        IN: id - the id to check
+            country - the country specified for the biobank
+        OUT: writes to log file when invalid"""
         biobank_qc = IdChecks(id, country)
         msg = biobank_qc.get_messages()
         if len(msg) > 0:
             self.logs.write(id, 'biobank_id', biobank_qc.get_messages(), 'CRITICAL', 'BIOBANK HAS INVALID ID')
 
     def is_valid_person_id(self, id, country):
+        """NAME: is_valid_person_id
+        PURPOSE: checks if person id is valid
+        IN: id - the id to check
+            country - the country specified for the person
+        OUT: writes to log file when invalid"""
         person_qc = PersonIdChecks(id, country)
         msg = person_qc.get_messages()
         if len(msg) > 0:
             self.logs.write(id, 'person_id', person_qc.get_messages(), 'CRITICAL', 'PERSON HAS INVALID ID')
 
     def is_valid_network_id(self, id):
+        """NAME: is_valid_network_id
+        PURPOSE: checks if network id is valid
+        IN: id - the id to check
+            country - the country specified for the network
+        OUT: writes to log file when invalid"""
         network_qc = NetworkIdChecks(id)
         msg = network_qc.get_messages()
         if self.not_empty(msg):
@@ -57,9 +92,19 @@ class QualityChecker():
             print('passed: ', id)
 
     def not_empty(self, value):
+        """NAME: not_empty
+        PURPOSE: checks if a valus is not empty or empty like (NA / N/A)
+        IN: value - the value that needs to be checked for emptyness
+        OUT: Boolean; TRUE if value is of length 0 or 'NA' or 'N/A', else FALSE"""
         return len(value) > 0 and value != 'NA' and value != 'N/A'
 
     def check_name(self, id, name, type):
+        """NAME: check_name
+        PURPOSE: checks if the name is not empty
+        IN:     id - the id of the row that has this name
+                name - the name to check
+                type - can be collection, biobank, network
+        OUT: writes to log file when invalid"""
         if not self.not_empty(name):
             self.logs.write(id, type+'_name', 'Name not specified', 'CRITICAL', type.upper()+' MISSING NAME')
 
@@ -175,12 +220,13 @@ class QualityChecker():
 
 def main():
     config = ConfigParser().config
-    molgenisConnector  = MolgenisConnector(config['url'], config['account'], config['password'])
-    qc = QualityChecker(molgenisConnector)
+    molgenis_connector = MolgenisConnector(config['url'], config['account'], config['password'])
+    qc = QualityChecker(molgenis_connector)
     qc.check_collection_data()
     qc.check_biobank_data()
     qc.check_network_data()
     qc.check_person_data()
+    molgenis_connector.logs.close()
 
 if __name__ == "__main__":
     main()
