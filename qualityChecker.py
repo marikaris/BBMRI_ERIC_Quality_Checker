@@ -194,11 +194,19 @@ class QualityChecker():
             self.logs.write(id, type+'_geolocation', 'latitude/longitude not defined', 'WARNING', type.upper()+' MISSING LATITUDE/LONGITUDE')
 
     def check_network_juridical_person(self, row):
+        """NAME: check_network_juridical_person
+        PURPOSE: checks if juridical person is present in network
+        IN: row to check in
+        OUT: writes to log when juridical person is missing"""
         id = row['id']
         if 'juridical_person' not in row:
             self.logs.write(id, 'network_juridical_person', 'Juridical person not defined', 'CRITICAL', 'NETWORK MISSING JURIDICAL PERSON')
 
     def check_person_phonenumber(self, row):
+        """NAME: check_person_phonenumber
+        PURPOSE: check if the phone number is correctly formatted
+        IN: row to check for phonenumber in
+        OUT: writes to log when phonenumber is missing or incorrectly formatted"""
         id = row['id']
         if 'phone' in row:
             phone = row['phone']
@@ -208,6 +216,8 @@ class QualityChecker():
             self.logs.write(id, 'person_phone', 'Phone number not defined', 'WARNING', 'PERSON MISSING PHONE NUMBER')
 
     def check_person_data(self):
+        """NAME: check_person_data
+        PURPOSE: do all checks for the person table"""
         for row in self.person_data:
             id = row['id']
             country = row["country"]['name']
@@ -215,6 +225,8 @@ class QualityChecker():
             self.check_person_phonenumber(row)
 
     def check_network_data(self):
+        """NAME: check_network_data
+        PURPOSE: do all checks for the network table"""
         for row in self.network_data:
             id = row['id']
             self.is_valid_network_id(id)
@@ -225,8 +237,9 @@ class QualityChecker():
             self.check_contact(id, row['contact'], 'network')
             self.check_collaboration(row, 'network')
 
-
     def check_biobank_data(self):
+        """NAME: check_biobank_data
+        PURPOSE: do all checks for the biobank table"""
         for row in self.biobank_data:
             id = row['id']
             country = row["country"]['name']
@@ -239,11 +252,11 @@ class QualityChecker():
             self.check_collaboration(row, 'biobank')
 
     def check_collection_data(self):
-        # Check collection data
+        """NAME: check_collection_data
+        PURPOSE: do all checks for the collection table"""
         for row in self.collection_data:
             id = row['id']
             country = row["country"]['name']
-            # Check collection id
             self.is_valid_collection_id(id, country)
             self.check_name(id, row['name'], 'collection')
             self.check_description(row, 'collection')
