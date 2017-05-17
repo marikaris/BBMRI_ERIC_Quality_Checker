@@ -109,8 +109,14 @@ class QualityChecker():
             self.logs.write(id, type+'_name', 'Name not specified', 'CRITICAL', type.upper()+' MISSING NAME')
 
     def check_description(self, row, type):
+        """NAME: check_description
+        PURPOSE: checks if description is not empty and if not, checks if the description is long enough
+        IN:     row - which should contain description
+                type - can be collection, biobank, network
+        OUT: writes to log file when invalid"""
         if 'description' in row:
             description = row['description']
+            # Strip common characters and the words "collection" and "samples" from the description and then check if is is less than 30
             stripped_description = re.sub(r'collection|samples', '', description, flags=re.IGNORECASE)
             stripped_description = stripped_description.strip('.')
             stripped_description = stripped_description.strip(' ')
@@ -120,15 +126,29 @@ class QualityChecker():
             self.logs.write(row['id'], type+'_description', 'Description empty', 'CRITICAL', type.upper()+ ' MISSING DESCRIPTION')
 
     def check_contact(self, id, contact, type):
+        """NAME: check_contact
+        PURPOSE: checks if there is just one contact
+        IN: contact - the contact list
+            type - can be collection, biobank, network
+        OUT: writes to log if length of contact is more than 1"""
         if not len(contact) == 1:
             self.logs.write(id, type+'_contact', 'More than one contact: '+ str(len(contact)), 'CRITICAL', type.upper()+' HAS MORE THAN 1 CONTACT')
 
     def is_wild_card_diagnosis(self, list, id):
+        """NAME: is_wild_card_diagnosis
+        PURPOSE: checks if there is a * or - in the diagnosis
+        IN: list - list with diagnosis
+            id - id of the row
+        OUT: writes to log when wildcard is in diagnosis"""
         for diagnosis in list:
             if '*' in diagnosis['id'] or '-' in diagnosis['id']:
                 self.logs.write(id, 'collection_diagnosis', 'WARNING: Diagnosis contains wildcard: '+diagnosis['id'], 'WARNING', 'COLLECTION DIAGNOSIS CONTAINS WILDCARD')
 
     def check_biobank_head(self, row):
+        """NAME: check_biobank_head
+        PURPOSE: checks if the first and last name of the head of the biobank are given
+        IN: row - the row in which the first- and lastname should be
+        OUT: write to log if first- or lastname is missing"""
         id = row['id']
         if not 'head_firstname' in row:
             self.logs.write(id, 'biobank_head_firstname', 'Head firstname not defined', 'CRITICAL', 'BIOBANK MISSING HEAD FIRSTNAME')
@@ -136,11 +156,16 @@ class QualityChecker():
             self.logs.write(id, 'biobank_head_lastname', 'Head lastname not defined', 'CRITICAL', 'BIOBANK MISSING LAST FIRSTNAME')
 
     def check_collaboration(self, row, type):
+        """NAME: check_collaboration
+        PURPOSE: check if the row contains collaboration info
+        IN: row to check in
+            type - can be collection, biobank, network
+        OUT: writes to log when collaboration commercial and collaboration non for profit are not specified"""
         id = row['id']
         if not 'collaboration_commercial' in row:
             self.logs.write(id, type+'_collaboration', 'Collaboration commercial not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION COMMERCIAL')
         if not 'collaboration_non_for_profit' in row:
-            self.logs.write(id, type+'collection_collaboration', 'Collaboration non for profit not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION NON FOR PROFIT')
+            self.logs.write(id, type+'_collaboration', 'Collaboration non for profit not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION NON FOR PROFIT')
 
     def check_sample_image_data(self, row):
         id = row['id']
