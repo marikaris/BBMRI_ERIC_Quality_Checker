@@ -1,0 +1,3 @@
+url=https://molgenis01.gcc.rug.nl/api/
+account=admin
+password=yourpassword
