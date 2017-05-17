@@ -6,7 +6,7 @@ from networkIdChecks import NetworkIdChecks
 from personIdChecks import PersonIdChecks
 from configParser import ConfigParser
 
-import re
+import re, pprint
 
 class QualityChecker():
     def __init__(self, connnection):
@@ -57,7 +57,7 @@ class QualityChecker():
             print('passed: ', id)
 
     def not_empty(self, value):
-        return len(value) > 0 and value != 'NA'
+        return len(value) > 0 and value != 'NA' and value != 'N/A'
 
     def check_name(self, id, name, type):
         if not self.not_empty(name):
@@ -118,10 +118,21 @@ class QualityChecker():
         if 'juridical_person' not in row:
             self.logs.write(id, 'network_juridical_person', 'Juridical person not defined', 'CRITICAL', 'NETWORK MISSING JURIDICAL PERSON')
 
+    def check_person_phonenumber(self, row):
+        id = row['id']
+        if 'phone' in row:
+            phone = row['phone']
+            if not re.match(r'^\+(?:[0-9]??){6,14}[0-9]$', phone):
+                self.logs.write(id, 'network_juridical_person', 'Phone number formatted incorrect, not matching pattern: ^\+(?:[0-9]??){6,14}[0-9]$', 'CRITICAL', 'PERSON PHONE NUMBER FORMATTED INCORRECT')
+        else:
+            self.logs.write(id, 'person_phone', 'Phone number not defined', 'WARNING', 'PERSON MISSING PHONE NUMBER')
+
     def check_person_data(self):
         for row in self.person_data:
             id = row['id']
-
+            country = row["country"]['name']
+            self.is_valid_person_id(id, country)
+            self.check_person_phonenumber(row)
 
     def check_network_data(self):
         for row in self.network_data:
@@ -169,6 +180,7 @@ def main():
     qc.check_collection_data()
     qc.check_biobank_data()
     qc.check_network_data()
+    qc.check_person_data()
 
 if __name__ == "__main__":
     main()
