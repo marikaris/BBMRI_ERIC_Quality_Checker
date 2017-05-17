@@ -168,17 +168,27 @@ class QualityChecker():
             self.logs.write(id, type+'_collaboration', 'Collaboration non for profit not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION NON FOR PROFIT')
 
     def check_sample_image_data(self, row):
+        """NAME: check_sample_image_data
+        PURPOSE: check if the sample access fee/description is defined, also the material and the other way around and
+        if the image access fee/description is defined also the image dataset type and the other way around
+        IN: row to check in
+        OUT: writes to log when invalid combination is in row"""
         id = row['id']
         if ('image_access_description' in row or 'image_access_fee' in row) and len(row['image_dataset_type']) == 0:
             self.logs.write(id, 'collection_data', 'Image access description/fee not specified while image dataset type is', 'CRITICAL', 'COLLECTION MISSING IMAGE ACCESS DESCRIPTION/FEE')
         elif 'image_access_description' not in row and 'image_access_fee' not in row and len(row['image_dataset_type']) > 0:
             self.logs.write(id, 'collection_data', 'Image dataset type not specified while image access description/fee is', 'CRITICAL', 'COLLECTION MISSING IMAGE DATASET TYPE')
         if ('sample_access_description' in row or 'sample_access_fee' in row) and len(row['materials']) == 0:
-            self.logs.write(id, 'collection_data', 'Materials not specified while sample access description/fee is', 'CRITICAL', 'COLLECTION MISSING SAMPLE DATASET TYPE')
+            self.logs.write(id, 'collection_data', 'Materials not specified while sample access description/fee is', 'CRITICAL', 'COLLECTION MISSING MATERIAL')
         elif 'sample_access_description' not in row and 'sample_access_fee' not in row and len(row['materials']) > 0:
             self.logs.write(id, 'collection_data', 'Sample access description/fee not specified while materials is', 'CRITICAL', 'COLLECTION MISSING SAMPLE ACCESS DESCRIPTION/FEE')
 
     def check_geolocation(self, row, type):
+        """NAME: check_geolocation
+        PURPOSE: checks if latitude and longitude are in the row
+        IN: row
+            type - can be collection, biobank, network
+        OUT: writes to log when latitude/longitude is missing"""
         id = row['id']
         if 'latitude' not in row or 'longitude' not in row:
             self.logs.write(id, type+'_geolocation', 'latitude/longitude not defined', 'WARNING', type.upper()+' MISSING LATITUDE/LONGITUDE')
