@@ -9,3 +9,6 @@ class MolgenisConnector:
         response = self.session.getById(entity=entity, id=value)
         response.pop('href', None)
         return response
+
+    def logout(self):
+        self.session.logout()

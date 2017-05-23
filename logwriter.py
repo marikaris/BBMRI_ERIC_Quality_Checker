@@ -12,3 +12,6 @@ class LogWriter():
         self.logfile.close()
         self.logfile = Textfile(self.name, 'w').file
         self.logfile.write('id\ttype\tproblem\tstatus\tsummary\n')
+
+    def close(self):
+        self.logfile.close()

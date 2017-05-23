@@ -5,13 +5,16 @@ from idChecks import IdChecks
 from networkIdChecks import NetworkIdChecks
 from personIdChecks import PersonIdChecks
 from configParser import ConfigParser
+from diseaseCodeChecker import DiseaseCodeChecker
 
 import re
+
 
 class QualityChecker():
     """NAME: QualityChecker
     PURPOSE: Checks if the values in the MOLGENIS database of BBMRI-ERIC are filled in correctly
     OUT: logs.txt - file with all errors in the database"""
+
     def __init__(self, connnection):
         self.connection = connnection
         self.collection_data = self.get_collection_data()
@@ -106,7 +109,7 @@ class QualityChecker():
                 type - can be collection, biobank, network
         OUT: writes to log file when invalid"""
         if not self.not_empty(name):
-            self.logs.write(id, type+'_name', 'Name not specified', 'CRITICAL', type.upper()+' MISSING NAME')
+            self.logs.write(id, type + '_name', 'Name not specified', 'CRITICAL', type.upper() + ' MISSING NAME')
 
     def check_description(self, row, type):
         """NAME: check_description
@@ -121,9 +124,11 @@ class QualityChecker():
             stripped_description = stripped_description.strip('.')
             stripped_description = stripped_description.strip(' ')
             if len(stripped_description) < 30:
-                self.logs.write(row['id'], type+'_description', 'WARNING: Description length < 30: '+description, 'WARNING', type.upper()+' HAS SHORT DESCRIPTION')
+                self.logs.write(row['id'], type + '_description', 'WARNING: Description length < 30: ' + description,
+                                'WARNING', type.upper() + ' HAS SHORT DESCRIPTION')
         else:
-            self.logs.write(row['id'], type+'_description', 'Description empty', 'CRITICAL', type.upper()+ ' MISSING DESCRIPTION')
+            self.logs.write(row['id'], type + '_description', 'Description empty', 'CRITICAL',
+                            type.upper() + ' MISSING DESCRIPTION')
 
     def check_contact(self, id, contact, type):
         """NAME: check_contact
@@ -132,17 +137,20 @@ class QualityChecker():
             type - can be collection, biobank, network
         OUT: writes to log if length of contact is more than 1"""
         if not len(contact) == 1:
-            self.logs.write(id, type+'_contact', 'More than one contact: '+ str(len(contact)), 'CRITICAL', type.upper()+' HAS MORE THAN 1 CONTACT')
+            self.logs.write(id, type + '_contact', 'More than one contact: ' + str(len(contact)), 'CRITICAL',
+                            type.upper() + ' HAS MORE THAN 1 CONTACT')
 
-    def is_wild_card_diagnosis(self, list, id):
-        """NAME: is_wild_card_diagnosis
+    def is_invalid_diagnosis(self, list, id):
+        """NAME: is_invalid_diagnosis
         PURPOSE: checks if there is a * or - in the diagnosis
         IN: list - list with diagnosis
             id - id of the row
         OUT: writes to log when wildcard is in diagnosis"""
+        codeChecker = DiseaseCodeChecker()
         for diagnosis in list:
-            if '*' in diagnosis['id'] or '-' in diagnosis['id']:
-                self.logs.write(id, 'collection_diagnosis', 'WARNING: Diagnosis contains wildcard: '+diagnosis['id'], 'WARNING', 'COLLECTION DIAGNOSIS CONTAINS WILDCARD')
+            log = codeChecker.check_code(diagnosis['id'])
+            if log is not None:
+                self.logs.write(id, 'collection_diagnosis', log[0], log[1], log[2])
 
     def check_biobank_head(self, row):
         """NAME: check_biobank_head
@@ -151,9 +159,11 @@ class QualityChecker():
         OUT: write to log if first- or lastname is missing"""
         id = row['id']
         if not 'head_firstname' in row:
-            self.logs.write(id, 'biobank_head_firstname', 'Head firstname not defined', 'CRITICAL', 'BIOBANK MISSING HEAD FIRSTNAME')
+            self.logs.write(id, 'biobank_head_firstname', 'Head firstname not defined', 'CRITICAL',
+                            'BIOBANK MISSING HEAD FIRSTNAME')
         if not 'head_lastname' in row:
-            self.logs.write(id, 'biobank_head_lastname', 'Head lastname not defined', 'CRITICAL', 'BIOBANK MISSING LAST FIRSTNAME')
+            self.logs.write(id, 'biobank_head_lastname', 'Head lastname not defined', 'CRITICAL',
+                            'BIOBANK MISSING LAST FIRSTNAME')
 
     def check_collaboration(self, row, type):
         """NAME: check_collaboration
@@ -163,9 +173,11 @@ class QualityChecker():
         OUT: writes to log when collaboration commercial and collaboration non for profit are not specified"""
         id = row['id']
         if not 'collaboration_commercial' in row:
-            self.logs.write(id, type+'_collaboration', 'Collaboration commercial not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION COMMERCIAL')
+            self.logs.write(id, type + '_collaboration', 'Collaboration commercial not specified', 'CRITICAL',
+                            type.upper() + ' MISSING COLLABORATION COMMERCIAL')
         if not 'collaboration_non_for_profit' in row:
-            self.logs.write(id, type+'_collaboration', 'Collaboration non for profit not specified', 'CRITICAL', type.upper()+' MISSING COLLABORATION NON FOR PROFIT')
+            self.logs.write(id, type + '_collaboration', 'Collaboration non for profit not specified', 'CRITICAL',
+                            type.upper() + ' MISSING COLLABORATION NON FOR PROFIT')
 
     def check_sample_image_data(self, row):
         """NAME: check_sample_image_data
@@ -175,13 +187,20 @@ class QualityChecker():
         OUT: writes to log when invalid combination is in row"""
         id = row['id']
         if ('image_access_description' in row or 'image_access_fee' in row) and len(row['image_dataset_type']) == 0:
-            self.logs.write(id, 'collection_data', 'Image access description/fee not specified while image dataset type is', 'CRITICAL', 'COLLECTION MISSING IMAGE ACCESS DESCRIPTION/FEE')
-        elif 'image_access_description' not in row and 'image_access_fee' not in row and len(row['image_dataset_type']) > 0:
-            self.logs.write(id, 'collection_data', 'Image dataset type not specified while image access description/fee is', 'CRITICAL', 'COLLECTION MISSING IMAGE DATASET TYPE')
+            self.logs.write(id, 'collection_data',
+                            'Image access description/fee not specified while image dataset type is', 'CRITICAL',
+                            'COLLECTION MISSING IMAGE ACCESS DESCRIPTION/FEE')
+        elif 'image_access_description' not in row and 'image_access_fee' not in row and len(
+                row['image_dataset_type']) > 0:
+            self.logs.write(id, 'collection_data',
+                            'Image dataset type not specified while image access description/fee is', 'CRITICAL',
+                            'COLLECTION MISSING IMAGE DATASET TYPE')
         if ('sample_access_description' in row or 'sample_access_fee' in row) and len(row['materials']) == 0:
-            self.logs.write(id, 'collection_data', 'Materials not specified while sample access description/fee is', 'CRITICAL', 'COLLECTION MISSING MATERIAL')
+            self.logs.write(id, 'collection_data', 'Materials not specified while sample access description/fee is',
+                            'CRITICAL', 'COLLECTION MISSING MATERIAL')
         elif 'sample_access_description' not in row and 'sample_access_fee' not in row and len(row['materials']) > 0:
-            self.logs.write(id, 'collection_data', 'Sample access description/fee not specified while materials is', 'CRITICAL', 'COLLECTION MISSING SAMPLE ACCESS DESCRIPTION/FEE')
+            self.logs.write(id, 'collection_data', 'Sample access description/fee not specified while materials is',
+                            'CRITICAL', 'COLLECTION MISSING SAMPLE ACCESS DESCRIPTION/FEE')
 
     def check_geolocation(self, row, type):
         """NAME: check_geolocation
@@ -191,7 +210,8 @@ class QualityChecker():
         OUT: writes to log when latitude/longitude is missing"""
         id = row['id']
         if 'latitude' not in row or 'longitude' not in row:
-            self.logs.write(id, type+'_geolocation', 'latitude/longitude not defined', 'WARNING', type.upper()+' MISSING LATITUDE/LONGITUDE')
+            self.logs.write(id, type + '_geolocation', 'latitude/longitude not defined', 'WARNING',
+                            type.upper() + ' MISSING LATITUDE/LONGITUDE')
 
     def check_network_juridical_person(self, row):
         """NAME: check_network_juridical_person
@@ -200,7 +220,8 @@ class QualityChecker():
         OUT: writes to log when juridical person is missing"""
         id = row['id']
         if 'juridical_person' not in row:
-            self.logs.write(id, 'network_juridical_person', 'Juridical person not defined', 'CRITICAL', 'NETWORK MISSING JURIDICAL PERSON')
+            self.logs.write(id, 'network_juridical_person', 'Juridical person not defined', 'CRITICAL',
+                            'NETWORK MISSING JURIDICAL PERSON')
 
     def check_person_phonenumber(self, row):
         """NAME: check_person_phonenumber
@@ -211,7 +232,9 @@ class QualityChecker():
         if 'phone' in row:
             phone = row['phone']
             if not re.match(r'^\+(?:[0-9]??){6,14}[0-9]$', phone):
-                self.logs.write(id, 'network_juridical_person', 'Phone number formatted incorrect, not matching pattern: ^\+(?:[0-9]??){6,14}[0-9]$', 'CRITICAL', 'PERSON PHONE NUMBER FORMATTED INCORRECT')
+                self.logs.write(id, 'network_juridical_person',
+                                'Phone number formatted incorrect, not matching pattern: ^\+(?:[0-9]??){6,14}[0-9]$',
+                                'CRITICAL', 'PERSON PHONE NUMBER FORMATTED INCORRECT')
         else:
             self.logs.write(id, 'person_phone', 'Phone number not defined', 'WARNING', 'PERSON MISSING PHONE NUMBER')
 
@@ -261,7 +284,7 @@ class QualityChecker():
             self.check_name(id, row['name'], 'collection')
             self.check_description(row, 'collection')
             self.check_contact(id, row['contact'], 'collection')
-            self.is_wild_card_diagnosis(row['diagnosis_available'], id)
+            self.is_invalid_diagnosis(row['diagnosis_available'], id)
             self.check_collaboration(row, 'collection')
             self.check_sample_image_data(row)
 
@@ -274,7 +297,9 @@ def main():
     qc.check_biobank_data()
     qc.check_network_data()
     qc.check_person_data()
-    molgenis_connector.logs.close()
+    qc.logs.close()
+    molgenis_connector.logout()
+
 
 if __name__ == "__main__":
     main()
