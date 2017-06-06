@@ -18,7 +18,7 @@ class DiseaseCodeChecker():
             return True
 
     def has_wildcard(self, code):
-        pattern = r"(urn:miriam:icd:[A-Z]{1}\d{1,2})(\*)"
+        pattern = r"(urn:miriam:icd:[A-Z]{1}\d{0,2})(\*)"
         if re.match(pattern, code):
             return True
         else:

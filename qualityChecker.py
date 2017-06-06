@@ -46,6 +46,7 @@ class QualityChecker():
         """NAME: get_biobank_data
         PURPOSE: retrieves biobank data from molgenis
         OUT: dictionary with data inside biobanks"""
+        print(self.connection.session.get("eu_bbmri_eric_biobanks", num=10000))
         return self.connection.session.get("eu_bbmri_eric_biobanks", num=10000)
 
     def is_valid_collection_id(self, id, country):
