@@ -48,13 +48,13 @@ class QualityChecker():
         OUT: dictionary with data inside biobanks"""
         return self.connection.session.get("eu_bbmri_eric_biobanks", num=10000)
 
-    def is_valid_collection_id(self, id, country):
+    def is_valid_collection_id(self, id, country, biobankId):
         """NAME: is_valid_collection_id
         PURPOSE: checks if collection id is valid
         IN: id - the id to check
             country - the country specified for the collection
         OUT: writes to log file when invalid"""
-        collection_qc = CollectionIdChecks(id, country)
+        collection_qc = CollectionIdChecks(id, country, biobankId)
         msg = collection_qc.get_messages()
         if len(msg) > 0:
             self.logs.write(id, 'collection_id', collection_qc.get_messages(), 'CRITICAL', 'COLLECTION HAS INVALID ID')
@@ -279,8 +279,9 @@ class QualityChecker():
         PURPOSE: do all checks for the collection table"""
         for row in self.collection_data:
             id = row['id']
+            biobankId = row['biobank']['id']
             country = row["country"]['name']
-            self.is_valid_collection_id(id, country)
+            self.is_valid_collection_id(id, country, biobankId)
             self.check_name(id, row['name'], 'collection')
             self.check_description(row, 'collection')
             self.check_contact(id, row['contact'], 'collection')
